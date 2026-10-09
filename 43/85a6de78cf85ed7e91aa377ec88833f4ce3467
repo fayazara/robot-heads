@@ -1,0 +1,81 @@
+.gitignore
+  s_a859c19befcd34::t_3ffb479b16d294 1-31
+LICENSE
+  s_a859c19befcd34::t_ed87ab582eecd6 1-21
+README.md
+  s_a859c19befcd34::t_89eba3274bb1a5 1-114
+package.json
+  s_a859c19befcd34::t_59ff268b180f82 1-73
+pnpm-lock.yaml
+  s_a859c19befcd34::t_b18f43b3853adf 1-3169
+pnpm-workspace.yaml
+  s_a859c19befcd34::t_70fb276edd4433 1-11
+site/.oxlintrc.json
+  s_a859c19befcd34::t_a79e46c196bb28 1-8
+site/.vscode/settings.json
+  s_a859c19befcd34::t_db935248bee16f 1-5
+site/index.html
+  s_a859c19befcd34::t_84da1b55253e12 1-26
+site/package.json
+  s_a859c19befcd34::t_bb53c47cab97d5 1-30
+site/public/fonts/OFL.txt
+  s_a859c19befcd34::t_859f83dfbf5459 1-92
+site/src/App.tsx
+  s_a859c19befcd34::t_66acebaab1b1b9 1-346
+site/src/index.css
+  s_a859c19befcd34::t_0dc4669260bdaa 1-215
+site/src/main.tsx
+  s_a859c19befcd34::t_a4995c17e92f24 1-10
+site/tsconfig.app.json
+  s_a859c19befcd34::t_3692b17dce8500 1-26
+site/tsconfig.json
+  s_a859c19befcd34::t_bbeeaacbb353d7 1-14
+site/tsconfig.node.json
+  s_a859c19befcd34::t_e9f403baa8f53c 1-23
+site/tsconfig.worker.json
+  s_a859c19befcd34::t_2bfd1f5c2ceea6 1-8
+site/vite.config.ts
+  s_a859c19befcd34::t_853244bc03e513 1-16
+site/worker-configuration.d.ts
+  s_a859c19befcd34::t_5d390f6081fe83 1-16241
+site/worker/index.ts
+  s_a859c19befcd34::t_31e5a4898a1855 1-8
+site/wrangler.jsonc
+  s_a859c19befcd34::t_751df7c9eba16d 1-40
+src/RobotHead.tsx
+  s_a859c19befcd34::t_860b8354e99ff6 1-148
+src/index.ts
+  s_a859c19befcd34::t_64f2e810387594 1-2
+src/tv/faces.ts
+  s_a859c19befcd34::t_7b0902c54bcc10 1-213
+src/tv/geometry.ts
+  s_a859c19befcd34::t_c90bd8b203bf99 1-341
+src/tv/light.ts
+  s_a859c19befcd34::t_df63b0ca88e523 1-96
+src/tv/render.ts
+  s_a859c19befcd34::t_4c083fe3437260 1-761
+src/tv/sim.ts
+  s_a859c19befcd34::t_0d185eac1e0759 1-364
+src/types.ts
+  s_a859c19befcd34::t_efd830d199551d 1-48
+tsconfig.json
+  s_a859c19befcd34::t_00b3dd36465f49 1-15
+vite.config.ts
+  s_a859c19befcd34::t_f7b94d86ed140d 1-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4385a6de78cf85ed7e91aa377ec88833f4ce3467",
+  "prompts": {},
+  "sessions": {
+    "s_a859c19befcd34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d6a6e564-4738-444b-b080-fde92a1b3fc0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
