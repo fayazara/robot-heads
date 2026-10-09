@@ -1,0 +1,21 @@
+site/src/App.tsx
+  s_a859c19befcd34::t_aa6e2f44bc9a5c 279-284
+site/src/index.css
+  s_a859c19befcd34::t_ca5c1b4ae452a0 93-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "49cd3f706c2eba449a9d8e593e988f82d4796ac8",
+  "prompts": {},
+  "sessions": {
+    "s_a859c19befcd34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d6a6e564-4738-444b-b080-fde92a1b3fc0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
