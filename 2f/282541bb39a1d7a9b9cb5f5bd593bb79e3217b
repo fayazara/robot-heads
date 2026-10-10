@@ -1,0 +1,29 @@
+README.md
+  s_a859c19befcd34::t_771d6b9c5d9f91 71,82
+package.json
+  s_a859c19befcd34::t_daccf304e66664 3
+site/src/App.tsx
+  s_a859c19befcd34::t_fe3ba41608ff4a 86,92,170,187,240,251,259,265,292,304-316,342,359
+src/RobotHead.tsx
+  s_a859c19befcd34::t_10c2a4429ce191 63,92-93,111,132
+src/tv/render.ts
+  s_a859c19befcd34::t_138e098c2f195e 24,57,441-443,445-448,469,546-547,651,679
+src/types.ts
+  s_a859c19befcd34::t_e8d4da0a7cbc42 42-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2f282541bb39a1d7a9b9cb5f5bd593bb79e3217b",
+  "prompts": {},
+  "sessions": {
+    "s_a859c19befcd34": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d6a6e564-4738-444b-b080-fde92a1b3fc0",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
