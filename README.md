@@ -46,8 +46,8 @@ Each state has its own face on the screen, its own motion and its own antenna li
 | `idle` | block eyes that blink and glance | looks around, hops now and then |
 | `thinking` | heavy-lidded eyes looking up, three pulsing dots | head tilted up, switching sides; amber light pulses |
 | `searching` | darting eyes, a beam sweeping the whole screen | head sweeps side to side; cyan beacon |
-| `listening` | alert eyes over a live equaliser | head cocked, small nods; steady green light |
-| `speaking` | a mouth that moves with the words | bobs as it talks |
+| `listening` | alert eyes over an equaliser that hears phrases, each vowel its own shape | head cocked, leaning in as the voice rises, a nod as each phrase ends; green light that follows the voice |
+| `speaking` | a mouth that shapes each syllable (wide, tall or round), pausing between words and phrases; eyes lift on stressed syllables | turns to someone new each phrase, bobbing with the jaw; light that follows the voice |
 | `working` | focused eyes looking down, a progress bar | busy bobbing, a hop with a spin now and then |
 | `happy` | `^ ^` eyes and a smile | bouncy hops |
 | `error` | red `X X` eyes | shakes its head; red light blinks |
@@ -70,6 +70,8 @@ The list is exported as `robotHeadStates`.
   interactive             // follow the pointer, hop and spin on a click
   antenna                 // the antenna's stem and light; off, the knob stays
   floorShadow             // the soft shadow under the head
+  sound={false}           // sound effects in time with the animation (below)
+  onCue={(cue) => {}}     // the moments those sounds follow, for your own
   seed={0.3}              // 0–1, desyncs blinks and glances in a row of heads
 />
 ```
@@ -86,6 +88,36 @@ Its motion is not part of that box. Hops, the antenna's glow and the floor's sha
 
 - **Pointer play.** With `interactive` on (the default), the head and eyes follow a nearby pointer, and a click makes it hop with a full spin and a happy face.
 - **Small sizes.** For avatars in a list, `antenna={false}` drops the antenna's stem and its light, keeping the knob on top, so the head itself fills more of the box (the square, circle and hexagon grow; the wide rectangle is already as big as its width allows).
+- **Sound.** Off by default. `sound` plays effects in time with the animation, each state keeping a beat for as long as it lasts:
+
+  | State | Sound |
+  |---|---|
+  | `idle` | a soft tick on each blink |
+  | `thinking` | a questioning chime each time it tilts its head |
+  | `searching` | a curious chirp with each pass of the beam, higher one way than the other |
+  | `listening` | a rising blip as it nods at the end of each phrase |
+  | `speaking` | babble, a pitched pluck per syllable, stressed ones louder |
+  | `working` | a tick per progress segment, a chime as the bar fills |
+  | `happy` | a bright pep on each bounce |
+  | `error` | a buzz with each shake of the head |
+  | `sleeping` | a cat's purr, looped, swelling with each breath |
+
+  A glitch plays on every state switch, a power-down and power-up as it falls asleep and wakes, and a springy boing whenever it jumps, rising as it does, then a landing. The sounds are CC0: the effects by [Kenney](https://kenney.nl) by way of [soundcn](https://soundcn.xyz), the purr ["purring.m4a" by anchicheng98](https://freesound.org/people/anchicheng98/sounds/509949/) on Freesound. They load only when a head first turns sound on, and the purr only when one first falls asleep, so the package costs nothing extra without them. A paused head is quiet, and browsers keep audio silent until the user first interacts with the page.
+
+  Set the volume, or swap or silence any sound with a URL or `false`:
+
+  ```tsx
+  <RobotHead
+    sound={{
+      volume: 0.6,
+      sounds: { sleeping: '/purr.mp3', idle: false },
+    }}
+  />
+  ```
+
+  The keys are the states plus `hop`, `land`, `switch`, `asleep` and `awake`. `sleeping` loops; the rest play once a beat. For anything else, `onCue` hands you the same moments the sounds follow (a state switch, a hop, a landing, a beat, a breath) to play through your own audio.
+
+
 - **Reduced motion.** With `prefers-reduced-motion: reduce`, or `paused`, the still pose of the state is drawn instead of the animation.
 - **Accessible by default.** The canvas has `role="img"` and an `aria-label` naming the state ("Robot, thinking"); pass your own `aria-label` to override it.
 - **Cheap to run many.** Every head on the page shares one animation loop, which sleeps while the tab is hidden, and heads of the same shape and size share their baked textures.

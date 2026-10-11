@@ -4,8 +4,9 @@
    with an optional full turn, a landing squash), and the antenna is a
    wobbly spring of its own, shaken by whatever the head does. */
 
-import type { RobotHeadState } from '../types';
-import type { FaceParams } from './faces';
+import type { RobotHeadCue, RobotHeadState } from '../types';
+import { HEARD, type FaceParams } from './faces';
+import { hash, voice } from './voice';
 
 class Spring {
   x = 0;
@@ -40,10 +41,15 @@ interface Jump {
   spin: number;
   lean: number;
   air: number;
+  poked: boolean;
+  launched: boolean;
   landed: boolean;
 }
 
 const CROUCH = 0.11;
+
+/** The sleeping head's breath, in radians a second: its bob rises on the in-breath and falls on the out-breath. */
+export const SLEEP_BREATH = 1.15;
 
 export interface RobotPose {
   yaw: number;
@@ -74,6 +80,8 @@ export class RobotSim {
   face: FaceParams;
   /* the pointer, relative to the head's centre in CSS px, or null */
   pointer: { x: number; y: number } | null = null;
+  /* moments since the last frame, for the component to hand to onCue */
+  cues: RobotHeadCue[] = [];
 
   private yaw = new Spring();
   private pitch = new Spring();
@@ -93,6 +101,12 @@ export class RobotSim {
   private nextSide = 4;
   private reactUntil = -1;
   private nextNod = 2.5;
+  private exhaling = false;
+  /* the state's beat counter, so each beat cues once; -1 cues the first at once */
+  private lastBeat = -1;
+  private flips = 0;
+  /* listening: whether the voice it hears was mid-phrase last step */
+  private hearing = false;
 
   constructor(seed: number, state: RobotHeadState) {
     this.random = rng(seed);
@@ -104,8 +118,11 @@ export class RobotSim {
 
   setState(s: RobotHeadState) {
     if (s === this.state) return;
+    this.cues.push({ type: 'state', state: s, previous: this.state });
     this.state = s;
     this.since = 0;
+    this.lastBeat = -1;
+    this.hearing = false;
     this.nextLook = 0;
     this.nextHop = this.time + (s === 'happy' ? 0.2 : 3 + this.random() * 4);
     if (s === 'happy') this.hop(0.22, 1);
@@ -113,13 +130,53 @@ export class RobotSim {
 
   /** A click: a hop with a full turn and a happy face. */
   poke() {
-    this.hop(0.24, this.random() < 0.5 ? 1 : -1);
+    this.hop(0.24, this.random() < 0.5 ? 1 : -1, true);
     this.reactUntil = this.time + 1.6;
   }
 
-  hop(height: number, spin: number) {
+  hop(height: number, spin: number, poked = false) {
     if (this.jump) return;
-    this.jump = { age: 0, height, spin, lean: (this.random() - 0.5) * 0.3, air: 0.42 + height * 0.45, landed: false };
+    this.jump = { age: 0, height, spin, lean: (this.random() - 0.5) * 0.3, air: 0.42 + height * 0.45, poked, launched: false, landed: false };
+  }
+
+  /* the rhythm each state keeps, as the screen shows it: a cue per beat */
+  private beats() {
+    const s = this.since;
+    let beat = this.lastBeat;
+    let accent = false;
+    switch (this.state) {
+      case 'thinking':
+      case 'listening':
+        /* a tilt to the other side; a nod */
+        beat = this.flips;
+        break;
+      case 'searching':
+        /* each pass of the beam (its face draws it at sin(s·1.6 + 0.4));
+           it enters mid-pass, so the first beat waits for it to turn */
+        beat = Math.floor((s * 1.6 + 0.4 + Math.PI / 2) / Math.PI);
+        if (this.lastBeat < 0) this.lastBeat = beat;
+        break;
+      case 'speaking': {
+        /* each syllable the mouth opens on, accented where stressed */
+        const v = voice(s, this.face.seed);
+        if (v.syllable < 0) break;
+        beat = v.syllable;
+        accent = v.stress;
+        break;
+      }
+      case 'working':
+        /* a segment of the progress bar; accented as it fills */
+        beat = Math.floor((s / 2.6) * 12);
+        accent = beat > 0 && beat % 12 === 0;
+        break;
+      case 'error':
+        /* a shake of the head */
+        beat = Math.floor(s / 2.4);
+        break;
+    }
+    if (beat === this.lastBeat) return;
+    this.lastBeat = beat;
+    this.cues.push({ type: 'beat', state: this.state, accent });
   }
 
   update(dt: number) {
@@ -179,6 +236,7 @@ export class RobotSim {
       case 'thinking': {
         if (t > this.nextSide) {
           this.face.side = -this.face.side;
+          this.flips++;
           this.nextSide = t + 3 + rand() * 2;
         }
         const s = this.face.side;
@@ -200,22 +258,31 @@ export class RobotSim {
         break;
       }
       case 'listening': {
-        yaw = -0.14;
-        pitch = 0.02;
-        roll = 0.17;
-        if (t > this.nextNod) {
+        /* cocked, leaning in a touch as the voice gets louder, and a nod as
+           each phrase it hears comes to an end */
+        const heard = voice(this.since, this.face.seed + HEARD);
+        yaw = -0.14 + Math.sin(t * 0.6) * 0.03;
+        pitch = 0.02 + heard.open * 0.04;
+        roll = 0.17 + Math.sin(t * 0.45) * 0.03;
+        if (this.hearing && !heard.talking) {
           this.pitch.v -= 0.9;
-          this.nextNod = t + 2 + rand() * 2.5;
+          this.flips++;
         }
+        this.hearing = heard.talking;
         break;
       }
-      case 'speaking':
-        yaw = Math.sin(t * 0.7) * 0.12;
-        pitch = 0.03 + Math.sin(t * 6.3) * 0.025 * (0.5 + 0.5 * Math.sin(t * 2.1));
-        roll = Math.sin(t * 0.9) * 0.05;
-        bob += Math.abs(Math.sin(t * 6.3)) * 0.01;
+      case 'speaking': {
+        /* turned to someone new each phrase, the head riding the jaw, a dip
+           on each stressed syllable */
+        const v = voice(this.since, this.face.seed);
+        const turn = hash(v.phrase, 5, this.face.seed) - 0.5;
+        yaw = turn * 0.34 + Math.sin(t * 0.7) * 0.04;
+        pitch = 0.02 + v.open * 0.035 + (v.stress ? v.open * 0.03 : 0);
+        roll = -turn * 0.08 + Math.sin(t * 0.9) * 0.03;
+        bob += v.open * 0.01;
         freq = 1.8;
         break;
+      }
       case 'working':
         yaw = Math.sin(t * 0.8) * 0.08;
         pitch = -0.16;
@@ -237,7 +304,7 @@ export class RobotSim {
         break;
       case 'error': {
         /* a shake of the head every couple of seconds */
-        const c = (t % 2.4) / 0.7;
+        const c = (this.since % 2.4) / 0.7;
         shake = c < 1 ? Math.sin(c * Math.PI * 7) * 0.22 * (1 - c) : 0;
         pitch = -0.06;
         roll = -0.05;
@@ -248,7 +315,12 @@ export class RobotSim {
         pitch = -0.34;
         roll = 0.13;
         yaw = 0.06;
-        bob = Math.sin(t * 1.15) * 0.016;
+        bob = Math.sin(t * SLEEP_BREATH) * 0.016;
+        /* the bob falling is the out-breath */
+        if (Math.cos(t * SLEEP_BREATH) < 0 !== this.exhaling) {
+          this.exhaling = !this.exhaling;
+          this.cues.push({ type: 'breath', out: this.exhaling });
+        }
         freq = 0.55;
         damping = 0.9;
         if (t > this.nextNod) {
@@ -282,6 +354,10 @@ export class RobotSim {
       } else {
         const ap = (j.age - CROUCH) / j.air;
         if (ap < 1) {
+          if (!j.launched) {
+            j.launched = true;
+            this.cues.push({ type: 'hop', poked: j.poked, height: j.height, air: j.air });
+          }
           if (ap < 0.06 && this.squash.x > 0.05) {
             /* leaving the ground: spring up into a stretch, the antenna lagging */
             this.squash.v = -2.6;
@@ -293,6 +369,7 @@ export class RobotSim {
           squashTarget = ap < 0.5 ? -0.05 : 0;
         } else if (!j.landed) {
           j.landed = true;
+          this.cues.push({ type: 'land' });
           this.squash.v += 3.2;
           this.antX.v += (rand() < 0.5 ? -1 : 1) * (2.5 + rand() * 2);
           this.antZ.v += 3.5;
@@ -303,9 +380,12 @@ export class RobotSim {
     }
     this.squash.step(squashTarget, dt, 3.2, 0.32);
 
+    this.beats();
+
     /* blinks */
     if (t > this.nextBlink) {
       this.blinkAge = 0;
+      if (this.state === 'idle') this.cues.push({ type: 'beat', state: 'idle', accent: false });
       this.nextBlink = t + 2.2 + rand() * 3.5;
       if (rand() < 0.2) this.nextBlink = t + 0.35;
     }

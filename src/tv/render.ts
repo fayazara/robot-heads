@@ -735,12 +735,12 @@ export class RobotRenderer {
 
     /* the bulb: frosted glass, lit from inside by the state's light */
     let colour: RGB = lightNow.ball;
-    let level = lightNow.pulse(sim ? sim.face.time : 0.3);
+    let level = lightNow.pulse(sim ? sim.face.time : 0.3, sim ? sim.face.seed : 0);
     if (sim && sim.switched < 0.3) {
       const was = LIGHTS[sim.previous];
       const k = sim.switched / 0.3;
       colour = mix(was.ball, colour, k);
-      level = was.pulse(sim.face.time + 10) * (1 - k) + level * k;
+      level = was.pulse(sim.face.time + 10, sim.face.seed) * (1 - k) + level * k;
     }
     if (sim && sim.age < 0.55) level *= smooth(0.1, 0.5, sim.age);
     void shown;

@@ -12,6 +12,41 @@ export type RobotHeadState =
   | 'error'
   | 'sleeping';
 
+/**
+ * A moment in the animation, handed to `onCue`: a state switch, a hop as
+ * it leaves the ground (`poked` when a click set it off; `height` in head
+ * heights, `air` the seconds until it lands), a landing, a sleeping head's breath
+ * turning over (`out` on the out-breath, as the head sinks), or a beat of
+ * the rhythm a state keeps for as long as it lasts: idle blinks, thinking
+ * tilts, each pass of the search beam, listening nods, speaking syllables,
+ * working progress segments (`accent` as the bar fills) and error shakes.
+ */
+export type RobotHeadCue =
+  | { type: 'state'; state: RobotHeadState; previous: RobotHeadState }
+  | { type: 'hop'; poked: boolean; height: number; air: number }
+  | { type: 'land' }
+  | { type: 'breath'; out: boolean }
+  | { type: 'beat'; state: RobotHeadState; accent: boolean };
+
+/**
+ * What can make a sound: each state's beat (happy's is its bounce, and
+ * sleeping's is a loop that breathes), and the moments any state shares.
+ * `asleep` and `awake` play as the head drops off and wakes; `switch` on
+ * every change of state.
+ */
+export type RobotHeadSound = RobotHeadState | 'hop' | 'land' | 'switch' | 'asleep' | 'awake';
+
+/** Tune the built-in sounds. */
+export interface RobotHeadSoundOptions {
+  /** 0–1, scales every sound. Default `1`. */
+  volume?: number;
+  /**
+   * Swap or silence a sound: a URL (or data URI) of an audio file to play
+   * instead, or `false` for none. `sleeping` loops; the rest play once a beat.
+   */
+  sounds?: Partial<Record<RobotHeadSound, string | false>>;
+}
+
 /** The head's build. Only the TV head so far. */
 export type RobotHeadModel = 'tv';
 
@@ -52,6 +87,20 @@ export interface RobotHeadProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'c
   antenna?: boolean;
   /** Draw the soft shadow on the floor under the head. Default `true`. */
   floorShadow?: boolean;
+  /**
+   * Play sound effects in time with the animation: `true` for the built-in
+   * set (CC0 sounds, loaded only when first turned on), or options to set
+   * the volume and swap or silence sounds. Default `false`. Browsers keep
+   * audio silent until the user first interacts with the page, and a paused
+   * head is quiet.
+   */
+  sound?: boolean | RobotHeadSoundOptions;
+  /**
+   * Called with each moment in the animation, on the frame it happens: for
+   * sound effects, or anything else that should keep time with the head.
+   * Silent while paused or under reduced motion.
+   */
+  onCue?: (cue: RobotHeadCue) => void;
   /** 0–1, offsets the blinks and glances so a row of heads does not move in unison. */
   seed?: number;
   className?: string;

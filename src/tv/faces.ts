@@ -8,6 +8,7 @@
    screen rather than the face (the search beam) run across all of it. */
 
 import type { RobotHeadState } from '../types';
+import { voice, type Voice } from './voice';
 
 export const COLS = 22;
 export const ROWS = 14;
@@ -88,6 +89,46 @@ const noise = (x: number) => {
   return 0.5 + 0.25 * Math.sin(x * 1.7) + 0.15 * Math.sin(x * 3.1 + 1.3) + 0.1 * Math.sin(x * 5.3 + 4.1);
 };
 
+/* the voice listening hears: another speaker, out of step with its own */
+export const HEARD = 0.37;
+
+/* a mouth on the voice: a line when shut; open, shaped by the vowel —
+   'ee' wide and short, 'ah' tall, 'oo' a small ring */
+function mouth(g: Grid, v: Voice) {
+  const h = v.open < 0.1 ? 0 : v.open < 0.33 ? 1 : v.open < 0.6 ? 2 : 3;
+  if (h === 0) {
+    rect(g, 9, 11, 4, 1, 0.45);
+    return;
+  }
+  const w = v.vowel === 1 ? 8 : v.vowel === 0 ? 6 : 4;
+  /* 'ee' never drops far; 'oo' is never a mere line */
+  const rows = v.vowel === 1 ? Math.min(h, 2) : v.vowel === 2 ? Math.max(h, 2) : h;
+  const x = 11 - w / 2;
+  const top = rows === 1 ? 11 : 10;
+  for (let y = 0; y < rows; y++) {
+    const edge = rows === 3 && (y === 0 || y === 2);
+    for (let c = 0; c < w; c++) {
+      /* round the corners of a tall mouth, and leave its middle dark */
+      if (edge && (c === 0 || c === w - 1)) continue;
+      const inside = rows === 3 && y === 1 && c > 0 && c < w - 1;
+      put(g, x + c, top + y, inside ? 0.22 : 1);
+    }
+  }
+}
+
+/* how an equaliser spreads a vowel across its bars, 0–1 across, by vowel */
+const FORMANTS: Array<Array<[number, number]>> = [
+  [[0.45, 0.28]],
+  [[0.2, 0.14], [0.78, 0.16]],
+  [[0.22, 0.2]],
+];
+
+function spectrum(x: number, vowel: 0 | 1 | 2) {
+  let v = 0.18;
+  for (const [at, wide] of FORMANTS[vowel]) v = Math.max(v, Math.exp(-(((x - at) / wide) ** 2)));
+  return v;
+}
+
 const CARET = ['..#..', '.#.#.', '#...#'];
 const CROSS = ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'];
 const Z_BIG = ['####', '..#.', '.#..', '####'];
@@ -122,28 +163,25 @@ export const FACES: Record<RobotHeadState, (g: Grid, f: FaceParams) => void> = {
   },
 
   listening(g, f) {
-    eyes(g, f, 4, 1, -1);
-    /* an equaliser, bottom-anchored, louder in the middle */
+    /* attentive: eyes up and bright while the voice talks, softer between */
+    const heard = voice(f.time, f.seed + HEARD);
+    eyes(g, f, 4, heard.talking ? 1 : 0.8, -1);
+    /* an equaliser on what it hears: each syllable's vowel spread across
+       the bars, settling to a dim floor in the pauses */
     for (let i = 0; i < 12; i++) {
-      const centre = 1 - Math.abs(i - 5.5) / 7;
-      const level = noise(f.time * 7 + i * 1.9 + f.seed * 10) * centre;
-      const h = Math.max(1, Math.round(level * 4));
-      for (let k = 0; k < h; k++) put(g, 5 + i, 12 - k, 0.75 - k * 0.12);
+      const shimmer = 0.75 + 0.25 * noise(f.time * 9 + i * 1.7 + f.seed * 10);
+      const level = heard.open * spectrum(i / 11, heard.vowel) * shimmer;
+      const h = Math.max(1, Math.round(level * 4.4));
+      for (let k = 0; k < h; k++) put(g, 5 + i, 12 - k, h === 1 && !heard.open ? 0.3 : 0.8 - k * 0.12);
     }
   },
 
   speaking(g, f) {
-    eyes(g, f, 4, 1, -1);
-    /* a mouth that opens and closes with the words */
-    const env = Math.max(0, Math.sin(f.time * 2.1) * 0.5 + Math.sin(f.time * 3.7 + 1) * 0.5);
-    for (let i = 0; i < 8; i++) {
-      const centre = 1 - Math.abs(i - 3.5) / 5;
-      const a = noise(f.time * 11 + i * 0.9) * centre * (0.35 + env);
-      const h = a > 0.55 ? 3 : a > 0.28 ? 2 : 1;
-      const top = h === 3 ? 10 : 11;
-      const rows = h === 3 ? 3 : h === 2 ? 2 : 1;
-      rect(g, 7 + i, top, 1, rows, 1);
-    }
+    const v = voice(f.time, f.seed);
+    /* the eyes lift on a stressed syllable, as brows would */
+    const lift = v.stress && v.progress < 0.45 ? -1 : 0;
+    eyes(g, f, 4, 1, -1 + lift);
+    mouth(g, v);
   },
 
   working(g, f) {
@@ -194,8 +232,8 @@ export interface StateLight {
   /* LED colour on the screen, null for the head's own */
   screen: [number, number, number] | null;
   ball: [number, number, number];
-  /* how bright the antenna ball is at time t */
-  pulse: (t: number) => number;
+  /* how bright the antenna ball is at time t, for a head with this seed */
+  pulse: (t: number, seed: number) => number;
 }
 
 const steady = (v: number) => () => v;
@@ -204,8 +242,8 @@ export const LIGHTS: Record<RobotHeadState, StateLight> = {
   idle: { screen: null, ball: [255, 250, 240], pulse: (t) => 0.75 + 0.1 * Math.sin(t * 1.4) },
   thinking: { screen: null, ball: [255, 184, 64], pulse: (t) => 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(t * 4.2)) },
   searching: { screen: null, ball: [90, 220, 255], pulse: (t) => ((t * 2.4) % 1 < 0.18 ? 1 : 0.25) },
-  listening: { screen: null, ball: [96, 255, 150], pulse: steady(0.95) },
-  speaking: { screen: null, ball: [255, 250, 240], pulse: (t) => 0.55 + 0.45 * noise(t * 11) },
+  listening: { screen: null, ball: [96, 255, 150], pulse: (t, seed) => 0.65 + 0.35 * voice(t, seed + HEARD).open },
+  speaking: { screen: null, ball: [255, 250, 240], pulse: (t, seed) => 0.45 + 0.55 * voice(t, seed).open },
   working: { screen: null, ball: [110, 160, 255], pulse: (t) => ((t * 1.7) % 1 < 0.5 ? 1 : 0.35) },
   happy: { screen: null, ball: [255, 130, 200], pulse: (t) => 0.8 + 0.2 * Math.sin(t * 8) },
   error: { screen: [255, 70, 64], ball: [255, 60, 50], pulse: (t) => ((t * 3) % 1 < 0.5 ? 1 : 0.15) },

@@ -12,6 +12,7 @@
 		"cf-typegen": "wrangler types"
 	},
 	"dependencies": {
+		"cuelume": "^0.2.4",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8",
 		"robot-heads": "workspace:*"

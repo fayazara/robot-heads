@@ -90,8 +90,8 @@ button:focus-visible, label:focus-within { outline: 1.5px solid var(--soft); out
 .install:hover { color: var(--text); }
 .install-copy { font: 16px var(--sans); color: var(--muted); }
 .masthead-end { display: flex; align-items: center; gap: 20px; }
-/* the GitHub mark and the theme toggle: two quiet icons, side by side */
-.masthead-end .icon-link + .theme { margin-left: -14px; }
+/* the GitHub mark, sound and theme toggles: quiet icons, side by side */
+.masthead-end .icon-link + .theme, .masthead-end .theme + .theme { margin-left: -14px; }
 .icon-link { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: var(--soft); transition: color .15s, background .15s; }
 .icon-link:hover { color: var(--text); background: var(--fill); }
 .icon-link svg { width: 20px; height: 20px; }
@@ -101,14 +101,16 @@ button:focus-visible, label:focus-within { outline: 1.5px solid var(--soft); out
 .theme svg { width: 20px; height: 20px; }
 
 /* ── the stage: the head on its own, the state set large under it ── */
-/* centred on the whole screen; the controls sit over its right side */
-.stage { grid-column: 1 / -1; grid-row: 2; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+/* in the middle column, between the dock and the controls, so neither
+   it nor the state row ever runs under them */
+.stage { grid-column: 2; grid-row: 2; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .caption { text-align: center; margin-top: 36px; }
 .caption h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.025em; }
 .caption p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
 
 /* ── controls: a column of quiet labels ── */
-.controls { grid-column: 3; grid-row: 2; align-self: start; padding-top: 64px; z-index: 1; display: flex; flex-direction: column; gap: 30px; min-height: 0; }
+/* down the right, beside the stage and the states; on a short window it scrolls on its own */
+.controls { grid-column: 3; grid-row: 2 / 4; align-self: start; padding: 64px 8px 8px; margin: 0 -8px; z-index: 1; display: flex; flex-direction: column; gap: 30px; min-height: 0; max-height: 100%; overflow-y: auto; scrollbar-width: none; }
 .control { display: grid; gap: 12px; }
 .control-head { display: flex; align-items: baseline; justify-content: space-between; }
 .control-label { font-size: 13px; color: var(--soft); }
@@ -154,7 +156,7 @@ button:focus-visible, label:focus-within { outline: 1.5px solid var(--soft); out
 .reset[aria-hidden='true'] { opacity: 0; pointer-events: none; }
 
 /* ── every state, standing in a row ── */
-.states { grid-column: 1 / -1; grid-row: 3; display: flex; justify-content: center; align-items: flex-end; gap: clamp(4px, 1.6vw, 28px); min-width: 0; }
+.states { grid-column: 2; grid-row: 3; display: flex; justify-content: center; align-items: flex-end; gap: clamp(4px, 1.6vw, 28px); min-width: 0; }
 .state { flex: 0 1 120px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
 .state-head { display: grid; place-items: center; padding: 22px 0 14px; opacity: .38; filter: saturate(.6); transition: opacity .25s, filter .25s, transform .25s var(--ease); }
 /* on a light page fading reads as washed out: dim less, drain more colour */
@@ -205,7 +207,7 @@ button:focus-visible, label:focus-within { outline: 1.5px solid var(--soft); out
     padding: 24px 20px 128px;
   }
   .masthead, .stage, .controls, .states { grid-column: 1; grid-row: auto; }
-  .controls { align-self: stretch; }
+  .controls { align-self: stretch; max-height: none; overflow: visible; }
   .states { flex-wrap: wrap; row-gap: 20px; }
   .state { flex-basis: 30%; }
   .dock { left: 50%; top: auto; bottom: 16px; transform: translateX(-50%); flex-direction: row; align-items: flex-end; }
